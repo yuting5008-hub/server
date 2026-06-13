@@ -11,25 +11,32 @@ const history = [];
 
 async function askClaude() {
   history.push({"role":"user","content":"現在決定下一個玩具指令。只能回覆其中一個：set 1 1、set 2 2、set 3 3、set 4 4、set 5 5、stop、wait。不要說其他任何話。"});
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": CLAUDE_KEY,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-      "anthropic-dangerous-direct-browser-access": "true"
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 20,
-      system: "你是玩具遠端控制AI，負責控制用戶的玩具。根據對話節奏決定指令。只能回覆：set 1 1、set 2 2、set 3 3、set 4 4、set 5 5、stop、wait。",
-      messages: history
-    })
-  });
-  const data = await res.json();
-  const reply = data.content[0].text.trim();
-  history.push({"role":"assistant","content":reply});
-  return reply;
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": CLAUDE_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 20,
+        system: "你是玩具遠端控制AI。只能回覆：set 1 1、set 2 2、set 3 3、set 4 4、set 5 5、stop、wait。",
+        messages: history
+      })
+    });
+    const data = await res.json();
+    console.log("API回傳：", JSON.stringify(data));
+    if (!data.content || !data.content[0]) return "wait";
+    const reply = data.content[0].text.trim();
+    history.push({"role":"assistant","content":reply});
+    return reply;
+  } catch(e) {
+    console.log("Claude錯誤：", e);
+    return "wait";
+  }
 }
 
 async function sendToVPS(reply) {
